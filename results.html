@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Analysis Results — AI Resume Analyzer</title>
+  <meta name="description" content="Your AI-powered resume analysis results with ATS score, keyword gaps, and personalized feedback.">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    @media print {
+      .dashboard-nav, .nav-actions, .loading-overlay { display: none !important; }
+      .dashboard-body { padding-top: 16px !important; }
+      body::before { display: none; }
+      .panel, .score-card, .recruiter-card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body class="dashboard-page">
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite">
+    <div class="loading-orb"></div>
+    <div class="loading-title">Rendering Your Analysis</div>
+    <div class="loading-step" id="loadingStep">Processing AI insights...</div>
+    <div class="loading-dots">
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD NAV ── -->
+  <nav class="dashboard-nav" role="navigation" aria-label="Dashboard navigation">
+    <div class="container">
+      <a href="index.html" class="nav-back" aria-label="Back to home">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        New Analysis
+      </a>
+
+      <div class="nav-center">
+        <div class="nav-logo-icon" style="width:30px;height:30px;font-size:15px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:8px;display:flex;align-items:center;justify-content:center;">🧠</div>
+        <span class="nav-title">Analysis Results</span>
+        <span id="overallGrade" class="grade-badge grade-B">B</span>
+      </div>
+
+      <div class="nav-actions">
+        <div class="export-btn-wrap">
+          <button id="exportJSON" class="btn-export" aria-label="Export as JSON file">
+            { } Export JSON
+          </button>
+          <button id="exportTXT" class="btn-export" aria-label="Export as text file">
+            📄 Export TXT
+          </button>
+          <button id="exportPDF" class="btn-export primary-export" aria-label="Print or save as PDF">
+            🖨️ Print / PDF
+          </button>
+          <button id="newAnalysis" class="btn-primary" style="padding:9px 18px;font-size:13px;" aria-label="Start new analysis">
+            + New Analysis
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── DASHBOARD BODY ── -->
+  <main class="dashboard-body" role="main">
+    <div class="container">
+
+      <!-- File Meta -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+        <div style="font-size:13px;color:var(--text-muted);">
+          📎 <span id="metaFileName" style="color:var(--text-secondary);font-weight:500;">Resume.pdf</span>
+        </div>
+        <div style="font-size:13px;color:var(--violet-400);font-weight:600;" id="metaRole"></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-left:auto;">
+          Analyzed: <span id="metaTime"></span>
+        </div>
+      </div>
+
+      <!-- ── SCORE CARDS ROW ── -->
+      <div class="scores-row" role="region" aria-label="Resume Scores">
+
+        <!-- ATS Score -->
+        <div class="score-card violet">
+          <div class="score-label">ATS Score</div>
+          <div class="score-ring-wrap">
+            <canvas id="ringATS" width="90" height="90" aria-label="ATS Score ring"></canvas>
+            <div class="score-ring-value">
+              <span class="score-num" id="scoreATSVal">—</span>
+              <span class="score-ring-unit">/100</span>
+            </div>
+          </div>
+          <div class="score-sublabel">Passes Applicant Tracking Systems</div>
+        </div>
+
+        <!-- Clarity Score -->
+        <div class="score-card cyan">
+          <div class="score-label">Clarity</div>
+          <div class="score-ring-wrap">
+            <canvas id="ringClarity" width="90" height="90" aria-label="Clarity Score ring"></canvas>
+            <div class="score-ring-value">
+              <span class="score-num" id="scoreClarityVal">—</span>
+              <span class="score-ring-unit">/100</span>
+            </div>
+          </div>
+          <div class="score-sublabel">Readability & Grammar</div>
+        </div>
+
+        <!-- Impact Score -->
+        <div class="score-card emerald">
+          <div class="score-label">Impact</div>
+          <div class="score-ring-wrap">
+            <canvas id="ringImpact" width="90" height="90" aria-label="Impact Score ring"></canvas>
+            <div class="score-ring-value">
+              <span class="score-num" id="scoreImpactVal">—</span>
+              <span class="score-ring-unit">/100</span>
+            </div>
+          </div>
+          <div class="score-sublabel">Quantified Achievements</div>
+        </div>
+
+        <!-- JD Match -->
+        <div class="score-card rose">
+          <div class="score-label">JD Match</div>
+          <div class="score-ring-wrap">
+            <canvas id="ringJD" width="90" height="90" aria-label="JD Match Score ring"></canvas>
+            <div class="score-ring-value">
+              <span class="score-num" id="scoreJDVal" style="font-size:16px;">N/A</span>
+            </div>
+          </div>
+          <div class="score-sublabel">Job Description Match</div>
+        </div>
+
+      </div>
+
+      <!-- ── MAIN GRID ── -->
+      <div class="main-grid">
+
+        <!-- LEFT COLUMN -->
+        <div class="left-col">
+
+          <!-- Recruiter Summary -->
+          <div class="recruiter-card">
+            <div class="recruiter-header">
+              <div class="recruiter-avatar">👔</div>
+              <div class="recruiter-meta">
+                <div class="recruiter-name">AI Recruiter Review</div>
+                <div class="recruiter-title">Based on 10,000+ real recruiter patterns</div>
+              </div>
+            </div>
+            <p class="recruiter-summary" id="recruiterSummaryText">Loading...</p>
+          </div>
+
+          <!-- Strengths -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-title-icon">💪</span>
+                Your Strengths
+              </div>
+              <span class="panel-badge" style="background:rgba(52,211,153,0.1);border-color:rgba(52,211,153,0.2);color:var(--emerald-400);">What's Working</span>
+            </div>
+            <div class="panel-body">
+              <div class="strengths-list" id="strengthsList">
+                <div class="empty-state">Loading strengths...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Keywords -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-title-icon">🔍</span>
+                Keyword Analysis
+              </div>
+              <span class="panel-badge">ATS Optimization</span>
+            </div>
+            <div class="panel-body">
+              <div class="keywords-section">
+                <div class="keywords-label missing">❌ Missing Keywords (add these!)</div>
+                <div class="keywords-chips" id="missingKeywords">
+                  <span class="no-keywords">Loading...</span>
+                </div>
+              </div>
+              <div class="keywords-section" style="margin-top:20px;">
+                <div class="keywords-label present">✅ Keywords Found</div>
+                <div class="keywords-chips" id="presentKeywords">
+                  <span class="no-keywords">Loading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bullet Improvements -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-title-icon">✍️</span>
+                Bullet Point Improvements
+              </div>
+              <span class="panel-badge">AI Rewrites</span>
+            </div>
+            <div class="panel-body">
+              <div class="bullets-list" id="bulletsList">
+                <div class="empty-state">Loading...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggestions -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-title-icon">🎯</span>
+                Top Action Items
+              </div>
+              <span class="panel-badge">Prioritized</span>
+            </div>
+            <div class="panel-body">
+              <div class="suggestions-list" id="suggestionsList">
+                <div class="empty-state">Loading...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Scores -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-title-icon">📊</span>
+                Section Breakdown
+              </div>
+              <span class="panel-badge">Detailed Scoring</span>
+            </div>
+            <div class="panel-body">
+              <div class="section-scores" id="sectionScores">
+                <div class="empty-state">Loading...</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT SIDEBAR -->
+        <div class="sidebar">
+
+          <!-- Skill Gaps -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-title-icon">⚡</span>
+                Skill Gaps
+              </div>
+              <span class="panel-badge" style="background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.2);color:var(--amber-400);">To Learn</span>
+            </div>
+            <div class="panel-body">
+              <div class="skill-gaps-list" id="skillGapsList">
+                <div class="empty-state">Loading...</div>
+              </div>
+              <div style="margin-top:14px;padding:12px;background:rgba(251,191,36,0.04);border:1px solid rgba(251,191,36,0.1);border-radius:10px;font-size:12px;color:var(--text-muted);line-height:1.6;">
+                💡 Add these skills to your learning roadmap to be more competitive for your target role.
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggested Roles -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-title-icon">💼</span>
+                Best-Fit Roles
+              </div>
+              <span class="panel-badge">AI Career Advisor</span>
+            </div>
+            <div class="panel-body">
+              <div class="roles-list" id="rolesList">
+                <div class="empty-state">Loading...</div>
+              </div>
+              <div style="margin-top:14px;font-size:12px;color:var(--text-muted);">Based on your skills and experience profile.</div>
+            </div>
+          </div>
+
+          <!-- Interview Questions -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-title-icon">🎤</span>
+                Interview Prep
+              </div>
+              <span class="panel-badge">Personalized Qs</span>
+            </div>
+            <div class="panel-body">
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+                Likely questions based on your resume:
+              </p>
+              <div class="questions-list" id="questionsList">
+                <div class="empty-state">Loading...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tips card -->
+          <div style="background:linear-gradient(135deg,rgba(124,58,237,0.1),rgba(6,182,212,0.05));border:1px solid rgba(124,58,237,0.2);border-radius:var(--radius-xl);padding:22px;">
+            <div style="font-size:15px;font-weight:700;margin-bottom:14px;">🚀 Quick Wins</div>
+            <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;">
+              <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;">
+                <span style="color:var(--violet-400);flex-shrink:0;">1.</span>
+                Add missing keywords naturally into your experience bullets
+              </li>
+              <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;">
+                <span style="color:var(--violet-400);flex-shrink:0;">2.</span>
+                Quantify every achievement with numbers or percentages
+              </li>
+              <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;">
+                <span style="color:var(--violet-400);flex-shrink:0;">3.</span>
+                Start every bullet with a strong action verb
+              </li>
+              <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;">
+                <span style="color:var(--violet-400);flex-shrink:0;">4.</span>
+                Keep formatting clean: consistent fonts, no tables or columns
+              </li>
+              <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;">
+                <span style="color:var(--violet-400);flex-shrink:0;">5.</span>
+                Target each resume version to a specific role
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="js/dashboard.js?v=2"></script>
+
+</body>
+</html>

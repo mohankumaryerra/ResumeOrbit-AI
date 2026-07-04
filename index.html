@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Resume Analyzer — Get Hired Faster with AI</title>
+  <meta name="description" content="Analyze your resume with AI. Get ATS scores, skill gap analysis, keyword optimization, and personalized feedback to land your dream job.">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css">
+
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- mammoth.js for DOCX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+  <!-- Config (API Key) -->
+  <script src="js/config.js"></script>
+
+  <style>
+    /* Inline critical styles for hero gradient animation */
+    .hero-gradient-ring {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: ringPulse 6s ease infinite;
+    }
+    .ring-1 {
+      width: 600px; height: 600px;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -60%);
+      background: radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%);
+      animation-delay: 0s;
+    }
+    .ring-2 {
+      width: 900px; height: 900px;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -60%);
+      background: radial-gradient(circle, rgba(6,182,212,0.04) 0%, transparent 70%);
+      animation-delay: 3s;
+    }
+    @keyframes ringPulse {
+      0%,100%{transform:translate(-50%,-60%) scale(1);opacity:.6}
+      50%{transform:translate(-50%,-60%) scale(1.05);opacity:1}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Error Toast -->
+  <div class="error-toast" id="errorToast" role="alert">
+    <span class="error-toast-icon">⚠️</span>
+    <span id="errorMsg">An error occurred.</span>
+  </div>
+
+  <!-- ── NAVBAR ── -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container">
+      <a href="index.html" class="nav-logo" aria-label="AI Resume Analyzer Home">
+        <div class="nav-logo-icon">🧠</div>
+        <span class="nav-logo-text">Resume<span>AI</span></span>
+      </a>
+      <div class="nav-badge">✨ Powered by Gemini</div>
+    </div>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-gradient-ring ring-1"></div>
+    <div class="hero-gradient-ring ring-2"></div>
+    <div class="container">
+      <div class="hero-eyebrow">
+        <span class="dot"></span>
+        AI-Powered · ATS-Optimized · Recruiter-Grade
+      </div>
+
+      <h1 class="hero-title" id="hero-title">
+        Get Your Resume<br>
+        <span class="gradient-text">Hired, Not Ignored</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Upload your resume and get an instant AI analysis — ATS score, keyword gaps,
+        bullet rewrites, and personalized coaching in under 30 seconds.
+      </p>
+
+      <div class="hero-stats" aria-label="Statistics">
+        <div class="hero-stat">
+          <div class="hero-stat-number">75%</div>
+          <div class="hero-stat-label">Resumes rejected by ATS</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-number">30s</div>
+          <div class="hero-stat-label">Analysis time</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-number">9+</div>
+          <div class="hero-stat-label">Metrics analyzed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── UPLOAD SECTION ── -->
+  <section class="upload-section" aria-labelledby="upload-title">
+    <div class="container">
+      <div class="upload-card">
+
+
+        <!-- File Upload Row -->
+        <h2 id="upload-title" style="font-size:18px;margin-bottom:20px;color:var(--text-primary)">
+          📋 Analyze Your Resume
+        </h2>
+
+        <div class="upload-row">
+          <!-- Resume Upload Zone -->
+          <div class="upload-zone" id="resumeZone" role="button" tabindex="0" aria-label="Upload your resume">
+            <input
+              type="file"
+              id="resumeInput"
+              accept=".pdf,.docx,.doc,.txt"
+              aria-label="Select resume file"
+            >
+            <span class="upload-icon">📄</span>
+            <div class="upload-title">Drop your resume here</div>
+            <div class="upload-subtitle">or click to browse</div>
+            <div class="upload-file-chips">
+              <span class="file-chip">PDF</span>
+              <span class="file-chip">DOCX</span>
+              <span class="file-chip">TXT</span>
+            </div>
+            <div class="upload-file-name" id="resumeFileName"></div>
+          </div>
+
+          <!-- Info card -->
+          <div style="display:flex;flex-direction:column;gap:12px;justify-content:center;">
+            <div class="glass-card" style="padding:20px;border-radius:16px;">
+              <div style="font-size:13px;font-weight:700;color:var(--violet-400);margin-bottom:10px;">🎯 What We Analyze</div>
+              <ul style="list-style:none;display:flex;flex-direction:column;gap:7px;">
+                <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;align-items:center;">
+                  <span style="color:var(--emerald-400);">✓</span> ATS Score (0–100)
+                </li>
+                <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;align-items:center;">
+                  <span style="color:var(--emerald-400);">✓</span> Grammar & Clarity Check
+                </li>
+                <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;align-items:center;">
+                  <span style="color:var(--emerald-400);">✓</span> Bullet Point Enhancement
+                </li>
+                <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;align-items:center;">
+                  <span style="color:var(--emerald-400);">✓</span> Keyword Gap Analysis
+                </li>
+                <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;align-items:center;">
+                  <span style="color:var(--emerald-400);">✓</span> AI Career Suggestions
+                </li>
+                <li style="font-size:13px;color:var(--text-secondary);display:flex;gap:8px;align-items:center;">
+                  <span style="color:var(--emerald-400);">✓</span> Interview Prep Questions
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Job Description -->
+        <div class="jd-section">
+          <div class="form-group">
+            <label class="form-label" for="jdInput">
+              📌 Job Description
+              <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;margin-left:6px;">(optional — enables JD match score)</span>
+            </label>
+            <textarea
+              id="jdInput"
+              class="form-textarea"
+              placeholder="Paste the job description here to get a match score and targeted keyword analysis..."
+              aria-label="Job Description"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Target Role -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="roleSelect">🎯 Target Role</label>
+            <select id="roleSelect" class="form-select" aria-label="Select target role">
+              <option value="">Select a role (optional)</option>
+              <optgroup label="Software Engineering">
+                <option value="Software Engineer">Software Engineer</option>
+                <option value="Frontend Developer">Frontend Developer</option>
+                <option value="Backend Developer">Backend Developer</option>
+                <option value="Full Stack Developer">Full Stack Developer</option>
+                <option value="DevOps Engineer">DevOps Engineer</option>
+                <option value="Mobile Developer">Mobile Developer</option>
+                <option value="ML Engineer">ML / AI Engineer</option>
+                <option value="Data Scientist">Data Scientist</option>
+                <option value="Data Analyst">Data Analyst</option>
+              </optgroup>
+              <optgroup label="Product & Design">
+                <option value="Product Manager">Product Manager</option>
+                <option value="UX Designer">UX / UI Designer</option>
+                <option value="Product Designer">Product Designer</option>
+              </optgroup>
+              <optgroup label="Business & Management">
+                <option value="Business Analyst">Business Analyst</option>
+                <option value="Project Manager">Project Manager</option>
+                <option value="Marketing Manager">Marketing Manager</option>
+                <option value="Sales Manager">Sales Manager</option>
+              </optgroup>
+              <optgroup label="Other">
+                <option value="Cybersecurity Analyst">Cybersecurity Analyst</option>
+                <option value="Cloud Architect">Cloud Architect</option>
+                <option value="Research Scientist">Research Scientist</option>
+                <option value="Other">Other</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group" style="justify-content:flex-end;">
+            <div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.15);border-radius:12px;padding:14px;font-size:12px;color:var(--text-muted);line-height:1.6;">
+              🔒 Your resume is processed directly via the Gemini API. We don't store your data on any server.
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyze Button -->
+        <div class="analyze-btn-wrap">
+          <div style="display: flex; gap: 16px; justify-content: center; align-items: center; flex-wrap: wrap;">
+            <button id="analyzeBtn" class="btn-analyze" aria-label="Analyze my resume">
+              <span class="btn-text">
+                <span class="btn-icon">🚀</span>
+                Analyze My Resume
+              </span>
+              <span class="btn-loading">
+                <span class="spinner"></span>
+                Analyzing with AI...
+              </span>
+            </button>
+            <button id="sampleBtn" class="btn-secondary" style="border-radius: 50px; padding: 14px 32px;" aria-label="Try with sample data">
+              <span class="btn-text">
+                <span class="btn-icon">✨</span>
+                Try with Sample
+              </span>
+            </button>
+          </div>
+          <div style="margin-top:16px;font-size:12px;color:var(--text-muted);">
+            Takes 10–30 seconds · Powered by Gemini 1.5 Flash
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── RECENT ANALYSES ── -->
+  <section class="recent-analyses-section" id="recentAnalysesSection" style="display: none; padding-bottom: 80px;" aria-labelledby="recent-title">
+    <div class="container">
+      <div class="section-eyebrow">Your History</div>
+      <h2 id="recent-title" style="font-size:24px;margin-bottom:24px;color:var(--text-primary);text-align:center;">
+        Recent Analyses
+      </h2>
+      <div id="recentAnalysesList" style="display:flex;flex-direction:column;gap:12px;max-width:800px;margin:0 auto;">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ── -->
+  <section class="features-section" aria-labelledby="features-title">
+    <div class="container">
+      <div class="section-eyebrow">What's inside</div>
+      <h2 class="section-title" id="features-title">
+        Everything you need to <span class="gradient-text">land the job</span>
+      </h2>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon feature-icon-violet">🎯</div>
+          <div class="feature-title">ATS Score Simulation</div>
+          <div class="feature-desc">See exactly how your resume scores against Applicant Tracking Systems before submitting.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon feature-icon-cyan">🔍</div>
+          <div class="feature-title">Keyword Gap Analysis</div>
+          <div class="feature-desc">Identify missing keywords that recruiters and ATS systems are looking for in your target role.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon feature-icon-emerald">✍️</div>
+          <div class="feature-title">AI Bullet Rewriter</div>
+          <div class="feature-desc">Transform weak bullet points into powerful, metrics-driven statements that impress hiring managers.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon feature-icon-rose">📊</div>
+          <div class="feature-title">JD Match Score</div>
+          <div class="feature-desc">Paste any job description to get a semantic match score and role-specific optimization tips.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon feature-icon-amber">💼</div>
+          <div class="feature-title">Career Role Advisor</div>
+          <div class="feature-desc">Discover the best-fit roles based on your existing experience and skill profile.</div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon feature-icon-blue">🎤</div>
+          <div class="feature-title">Interview Prep</div>
+          <div class="feature-desc">Get AI-generated interview questions tailored specifically to your resume and target role.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="container">
+      <p>
+        Built with ❤️ using <strong style="color:var(--violet-400)">Google Gemini AI</strong> ·
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get your free API key</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    // Configure PDF.js worker
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <script src="js/parser.js?v=3"></script>
+  <script src="js/ai.js?v=4"></script>
+  <script src="js/main.js?v=3"></script>
+
+</body>
+</html>
